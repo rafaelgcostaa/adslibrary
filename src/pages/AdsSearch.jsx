@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Search, 
@@ -10,11 +10,15 @@ import {
   TrendingUp,
   Eye,
   Calendar,
-  Globe
+  Globe,
+  AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { searchAds, consumeCredits, saveBusca, toggleFavorite } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 const AdsSearch = () => {
+  const { profile, refreshProfile } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState({
     country: 'BR',
@@ -27,83 +31,89 @@ const AdsSearch = () => {
   const [loading, setLoading] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
-  // Mock data for demonstration
-  const mockResults = [
-    {
-      id: '1',
-      headline: '🔥 Transforme Seu Corpo em 30 Dias',
-      description: 'Método revolucionário que já ajudou +10mil pessoas a perder peso de forma saudável. Clique e descubra o segredo!',
-      advertiser: 'FitnessPro',
-      niche: 'Fitness & Saúde',
-      scalabilityScore: 8.5,
-      activeAds: 247,
-      imageUrl: 'https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg?auto=compress&cs=tinysrgb&w=400',
-      landingUrl: 'https://example.com/fitness',
-      whatsappUrl: 'https://wa.me/5511999999999',
-      platforms: ['Facebook', 'Instagram'],
-      impressions: '100K - 500K',
-      reach: '50K - 200K'
-    },
-    {
-      id: '2',
-      headline: '💰 Ganhe R$ 3000 Trabalhando Online',
-      description: 'Método comprovado para gerar renda extra trabalhando apenas 2h por dia. Mais de 5000 alunos já transformaram suas vidas!',
-      advertiser: 'RendaOnline',
-      niche: 'Educação Online',
-      scalabilityScore: 7.8,
-      activeAds: 156,
-      imageUrl: 'https://images.pexels.com/photos/669615/pexels-photo-669615.jpeg?auto=compress&cs=tinysrgb&w=400',
-      landingUrl: 'https://example.com/renda',
-      whatsappUrl: null,
-      platforms: ['Facebook', 'Instagram', 'Audience Network'],
-      impressions: '50K - 200K',
-      reach: '30K - 100K'
-    },
-    {
-      id: '3',
-      headline: '✨ Pele Perfeita em 7 Dias',
-      description: 'Descubra o routine de skincare que celebridades usam. Resultados visíveis em uma semana ou seu dinheiro de volta!',
-      advertiser: 'BeautySecrets',
-      niche: 'Beleza & Cosméticos',
-      scalabilityScore: 9.2,
-      activeAds: 389,
-      imageUrl: 'https://images.pexels.com/photos/3762879/pexels-photo-3762879.jpeg?auto=compress&cs=tinysrgb&w=400',
-      landingUrl: 'https://example.com/beauty',
-      whatsappUrl: 'https://wa.me/5511888888888',
-      platforms: ['Instagram', 'Facebook'],
-      impressions: '200K - 1M',
-      reach: '150K - 500K'
-    }
-  ]
-
   const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      toast.error('Digite uma palavra-chave para buscar')
+      return
+    }
+
+    // Verificar créditos
+    if (profile?.credits_balance < 2.50) {
+      toast.error('Créditos insuficientes. Adicione mais créditos para continuar.')
+      return
+    }
+
     setLoading(true)
     
-    // Simulate API call
-    setTimeout(() => {
-      setResults(mockResults)
+    try {
+      // Buscar anúncios
+      const data = await searchAds(searchQuery, filters)
+      
+      if (data.success) {
+        setResults(data.results)
+        
+        // Consumir créditos
+        await consumeCredits(2.50, 'search', `Busca por: ${searchQuery}`)
+        
+        // Salvar no histórico
+        await saveBusca(searchQuery, filters, data.results)
+        
+        // Atualizar perfil
+        await refreshProfile()
+        
+        toast.success(`${data.results.length} anúncios encontrados!`)
+      } else {
+        throw new Error('Erro na busca')
+      }
+    } catch (error) {
+      console.error('Erro na busca:', error)
+      toast.error('Erro ao buscar anúncios. Tente novamente.')
+    } finally {
       setLoading(false)
-      toast.success(`${mockResults.length} anúncios encontrados!`)
-    }, 1500)
+    }
   }
 
-  const handleFavorite = (adId) => {
-    toast.success('Anúncio adicionado aos favoritos!')
+  const handleFavorite = async (ad) => {
+    try {
+      const result = await toggleFavorite(ad.id)
+      
+      if (result.action === 'added') {
+        toast.success('Anúncio adicionado aos favoritos!')
+      } else {
+        toast.success('Anúncio removido dos favoritos!')
+      }
+    } catch (error) {
+      console.error('Erro ao favoritar:', error)
+      toast.error('Erro ao gerenciar favorito')
+    }
   }
 
   const handleDownload = (ad) => {
+    // Simular download
+    const dataStr = JSON.stringify(ad, null, 2)
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+    
+    const exportFileDefaultName = `anuncio_${ad.advertiser_name}_${Date.now()}.json`
+    
+    const linkElement = document.createElement('a')
+    linkElement.setAttribute('href', dataUri)
+    linkElement.setAttribute('download', exportFileDefaultName)
+    linkElement.click()
+    
     toast.success('Download iniciado!')
   }
 
   const getScoreColor = (score) => {
-    if (score >= 8) return 'text-green-500'
-    if (score >= 6) return 'text-yellow-500'
+    const numScore = parseFloat(score)
+    if (numScore >= 8) return 'text-green-500'
+    if (numScore >= 6) return 'text-yellow-500'
     return 'text-red-500'
   }
 
   const getScoreBackground = (score) => {
-    if (score >= 8) return 'bg-green-50 dark:bg-green-900/20'
-    if (score >= 6) return 'bg-yellow-50 dark:bg-yellow-900/20'
+    const numScore = parseFloat(score)
+    if (numScore >= 8) return 'bg-green-50 dark:bg-green-900/20'
+    if (numScore >= 6) return 'bg-yellow-50 dark:bg-yellow-900/20'
     return 'bg-red-50 dark:bg-red-900/20'
   }
 
@@ -121,6 +131,28 @@ const AdsSearch = () => {
           Explore milhares de anúncios do Facebook e identifique oportunidades de negócio
         </p>
       </motion.div>
+
+      {/* Credits Warning */}
+      {profile?.credits_balance < 10 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
+        >
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                Créditos baixos
+              </h3>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                Você tem apenas R$ {profile?.credits_balance?.toFixed(2)} em créditos. 
+                Cada busca custa R$ 2,50. Considere adicionar mais créditos.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Search Bar */}
       <motion.div
@@ -151,10 +183,10 @@ const AdsSearch = () => {
           </button>
           <button
             onClick={handleSearch}
-            disabled={loading}
+            disabled={loading || !searchQuery.trim() || profile?.credits_balance < 2.50}
             className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Buscando...' : 'Buscar'}
+            {loading ? 'Buscando...' : 'Buscar (R$ 2,50)'}
           </button>
         </div>
 
@@ -267,7 +299,7 @@ const AdsSearch = () => {
                   {/* Ad Image */}
                   <div className="lg:w-48 flex-shrink-0">
                     <img
-                      src={ad.imageUrl}
+                      src={ad.image_url}
                       alt="Ad creative"
                       className="w-full h-48 lg:h-32 object-cover rounded-lg"
                     />
@@ -281,13 +313,13 @@ const AdsSearch = () => {
                           {ad.headline}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Por {ad.advertiser} • {ad.niche}
+                          Por {ad.advertiser_name} • {ad.niche}
                         </p>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(ad.scalabilityScore)}`}>
-                        <TrendingUp className={`inline h-4 w-4 mr-1 ${getScoreColor(ad.scalabilityScore)}`} />
-                        <span className={getScoreColor(ad.scalabilityScore)}>
-                          {ad.scalabilityScore}/10
+                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(ad.scalability_score)}`}>
+                        <TrendingUp className={`inline h-4 w-4 mr-1 ${getScoreColor(ad.scalability_score)}`} />
+                        <span className={getScoreColor(ad.scalability_score)}>
+                          {ad.scalability_score}/10
                         </span>
                       </div>
                     </div>
@@ -300,15 +332,15 @@ const AdsSearch = () => {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Anúncios Ativos</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{ad.activeAds}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{ad.active_ads_count}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Impressões</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{ad.impressions}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{ad.impressions_range}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Alcance</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{ad.reach}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{ad.reach_range}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Plataformas</p>
@@ -322,7 +354,7 @@ const AdsSearch = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => handleFavorite(ad.id)}
+                          onClick={() => handleFavorite(ad)}
                           className="flex items-center space-x-1 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                         >
                           <Heart className="h-4 w-4" />
@@ -338,9 +370,9 @@ const AdsSearch = () => {
                       </div>
 
                       <div className="flex space-x-2">
-                        {ad.whatsappUrl && (
+                        {ad.whatsapp_url && (
                           <a
-                            href={ad.whatsappUrl}
+                            href={ad.whatsapp_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center space-x-1 px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
@@ -350,7 +382,7 @@ const AdsSearch = () => {
                           </a>
                         )}
                         <a
-                          href={ad.landingUrl}
+                          href={ad.landing_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center space-x-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"

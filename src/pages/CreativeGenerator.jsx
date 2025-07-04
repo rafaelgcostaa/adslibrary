@@ -7,11 +7,15 @@ import {
   Download, 
   Copy, 
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { generateImage, generateText, consumeCredits, saveCreative } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 const CreativeGenerator = () => {
+  const { profile, refreshProfile } = useAuth()
   const [activeTab, setActiveTab] = useState('image')
   const [loading, setLoading] = useState(false)
   
@@ -41,18 +45,45 @@ const CreativeGenerator = () => {
       return
     }
 
+    // Verificar créditos
+    if (profile?.credits_balance < 5.00) {
+      toast.error('Créditos insuficientes. Você precisa de R$ 5,00 para gerar uma imagem.')
+      return
+    }
+
     setLoading(true)
     
-    // Simulate API call
-    setTimeout(() => {
-      setGeneratedImage({
-        url: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=600',
-        prompt: imagePrompt,
-        timestamp: new Date().toISOString()
-      })
+    try {
+      // Gerar imagem
+      const data = await generateImage(imagePrompt, imageSettings)
+      
+      if (data.success) {
+        setGeneratedImage({
+          url: data.image_url,
+          prompt: imagePrompt,
+          timestamp: new Date().toISOString(),
+          generation_id: data.generation_id
+        })
+        
+        // Consumir créditos
+        await consumeCredits(5.00, 'image_generation', `Geração de imagem: ${imagePrompt}`)
+        
+        // Salvar criativo
+        await saveCreative('image', imagePrompt, null, data.image_url, imageSettings, 5.00)
+        
+        // Atualizar perfil
+        await refreshProfile()
+        
+        toast.success('Imagem gerada com sucesso!')
+      } else {
+        throw new Error('Erro na geração da imagem')
+      }
+    } catch (error) {
+      console.error('Erro na geração:', error)
+      toast.error('Erro ao gerar imagem. Tente novamente.')
+    } finally {
       setLoading(false)
-      toast.success('Imagem gerada com sucesso!')
-    }, 3000)
+    }
   }
 
   const handleTextGeneration = async () => {
@@ -61,45 +92,56 @@ const CreativeGenerator = () => {
       return
     }
 
+    // Verificar créditos
+    if (profile?.credits_balance < 3.00) {
+      toast.error('Créditos insuficientes. Você precisa de R$ 3,00 para gerar texto.')
+      return
+    }
+
     setLoading(true)
     
-    // Simulate API call
-    setTimeout(() => {
-      const mockText = {
-        headline: '🔥 Transforme Sua Vida em 30 Dias com Este Método Revolucionário!',
-        description: `Você está cansado de tentar métodos que não funcionam? 
-        
-🎯 ATENÇÃO: Método comprovado que já transformou mais de 10.000 vidas!
-
-💡 INTERESSE: Descubra como ${productInfo.name} pode resolver seus problemas de forma definitiva. Nossa abordagem única combina ciência e praticidade para resultados reais.
-
-❤️ DESEJO: Imagine-se vivendo a vida dos seus sonhos, com mais confiança, energia e sucesso. Nossos clientes relatam transformações incríveis em apenas algumas semanas!
-
-⚡ AÇÃO: Não perca esta oportunidade única! Clique agora e comece sua transformação hoje mesmo!`,
-        cta: '🚀 QUERO TRANSFORMAR MINHA VIDA AGORA!',
-        variations: {
-          scarcity: [
-            '⏰ ÚLTIMAS 24 HORAS - Oferta Especial!',
-            '🔥 APENAS 50 VAGAS RESTANTES!',
-            '⚡ PROMOÇÃO RELÂMPAGO - SÓ HOJE!'
-          ],
-          social_proof: [
-            '⭐ Mais de 10.000 clientes satisfeitos',
-            '🏆 Método aprovado por especialistas',
-            '💬 "Mudou minha vida completamente!" - Maria S.'
-          ]
-        }
-      }
+    try {
+      // Gerar texto
+      const data = await generateText(productInfo, textType)
       
-      setGeneratedText(mockText)
+      if (data.success) {
+        setGeneratedText(data.generated_text)
+        
+        // Consumir créditos
+        await consumeCredits(3.00, 'text_generation', `Geração de copy: ${productInfo.name}`)
+        
+        // Salvar criativo
+        const fullText = `${data.generated_text.headline}\n\n${data.generated_text.description}\n\n${data.generated_text.cta}`
+        await saveCreative('text', JSON.stringify(productInfo), fullText, null, { textType }, 3.00)
+        
+        // Atualizar perfil
+        await refreshProfile()
+        
+        toast.success('Texto gerado com sucesso!')
+      } else {
+        throw new Error('Erro na geração do texto')
+      }
+    } catch (error) {
+      console.error('Erro na geração:', error)
+      toast.error('Erro ao gerar texto. Tente novamente.')
+    } finally {
       setLoading(false)
-      toast.success('Texto gerado com sucesso!')
-    }, 2000)
+    }
   }
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
     toast.success('Texto copiado para a área de transferência!')
+  }
+
+  const downloadImage = () => {
+    if (generatedImage) {
+      const link = document.createElement('a')
+      link.href = generatedImage.url
+      link.download = `imagem_gerada_${Date.now()}.jpg`
+      link.click()
+      toast.success('Download iniciado!')
+    }
   }
 
   return (
@@ -116,6 +158,28 @@ const CreativeGenerator = () => {
           Crie imagens e textos otimizados para suas campanhas com inteligência artificial
         </p>
       </motion.div>
+
+      {/* Credits Warning */}
+      {profile?.credits_balance < 10 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
+        >
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                Créditos baixos
+              </h3>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                Você tem apenas R$ {profile?.credits_balance?.toFixed(2)} em créditos. 
+                Geração de imagem: R$ 5,00 | Geração de texto: R$ 3,00
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Tabs */}
       <motion.div
@@ -135,7 +199,7 @@ const CreativeGenerator = () => {
               }`}
             >
               <Image className="h-5 w-5 inline mr-2" />
-              Gerador de Imagens
+              Gerador de Imagens (R$ 5,00)
             </button>
             <button
               onClick={() => setActiveTab('text')}
@@ -146,7 +210,7 @@ const CreativeGenerator = () => {
               }`}
             >
               <FileText className="h-5 w-5 inline mr-2" />
-              Gerador de Textos
+              Gerador de Textos (R$ 3,00)
             </button>
           </nav>
         </div>
@@ -225,7 +289,7 @@ const CreativeGenerator = () => {
 
                   <button
                     onClick={handleImageGeneration}
-                    disabled={loading}
+                    disabled={loading || !imagePrompt.trim() || profile?.credits_balance < 5.00}
                     className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {loading ? (
@@ -236,7 +300,7 @@ const CreativeGenerator = () => {
                     ) : (
                       <>
                         <Wand2 className="h-5 w-5 mr-2" />
-                        Gerar Imagem
+                        Gerar Imagem (R$ 5,00)
                       </>
                     )}
                   </button>
@@ -253,7 +317,7 @@ const CreativeGenerator = () => {
                       />
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => toast.success('Download iniciado!')}
+                          onClick={downloadImage}
                           className="flex-1 bg-green-500 text-white py-2 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center"
                         >
                           <Download className="h-4 w-4 mr-2" />
@@ -261,7 +325,8 @@ const CreativeGenerator = () => {
                         </button>
                         <button
                           onClick={handleImageGeneration}
-                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          disabled={loading || profile?.credits_balance < 5.00}
+                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                         >
                           <RefreshCw className="h-4 w-4" />
                         </button>
@@ -372,7 +437,7 @@ const CreativeGenerator = () => {
 
                   <button
                     onClick={handleTextGeneration}
-                    disabled={loading}
+                    disabled={loading || !productInfo.name.trim() || profile?.credits_balance < 3.00}
                     className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {loading ? (
@@ -383,7 +448,7 @@ const CreativeGenerator = () => {
                     ) : (
                       <>
                         <Sparkles className="h-5 w-5 mr-2" />
-                        Gerar Copy AIDA
+                        Gerar Copy AIDA (R$ 3,00)
                       </>
                     )}
                   </button>

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Search, 
@@ -12,65 +12,67 @@ import {
   CreditCard
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { getDashboardStats, getRecentActivity } from '../lib/api'
 
 const Dashboard = () => {
   const { profile } = useAuth()
+  const [stats, setStats] = useState({
+    searches: 0,
+    favorites: 0,
+    creatives: 0,
+    totalSpent: 0
+  })
+  const [recentActivity, setRecentActivity] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const stats = [
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  const loadDashboardData = async () => {
+    try {
+      const [statsData, activityData] = await Promise.all([
+        getDashboardStats(),
+        getRecentActivity(8)
+      ])
+      
+      setStats(statsData)
+      setRecentActivity(activityData)
+    } catch (error) {
+      console.error('Erro ao carregar dados do dashboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const statsCards = [
     {
       icon: Search,
       label: 'Buscas Realizadas',
-      value: '247',
+      value: stats.searches.toString(),
       change: '+12%',
       color: 'blue'
     },
     {
       icon: Heart,
       label: 'Anúncios Favoritos',
-      value: '89',
+      value: stats.favorites.toString(),
       change: '+8%',
       color: 'red'
     },
     {
       icon: Image,
       label: 'Criativos Gerados',
-      value: '156',
+      value: stats.creatives.toString(),
       change: '+23%',
       color: 'green'
     },
     {
       icon: BarChart3,
-      label: 'Nichos Analisados',
-      value: '34',
+      label: 'Total Investido',
+      value: `R$ ${stats.totalSpent.toFixed(2)}`,
       change: '+5%',
       color: 'purple'
-    }
-  ]
-
-  const recentActivity = [
-    {
-      action: 'Busca realizada',
-      target: 'Nicho: Fitness',
-      time: '2 min atrás',
-      status: 'success'
-    },
-    {
-      action: 'Criativo gerado',
-      target: 'Imagem para campanha',
-      time: '15 min atrás',
-      status: 'success'
-    },
-    {
-      action: 'Anúncio favoritado',
-      target: 'Produto de beleza',
-      time: '1h atrás',
-      status: 'info'
-    },
-    {
-      action: 'Relatório exportado',
-      target: 'Análise semanal',
-      time: '2h atrás',
-      status: 'success'
     }
   ]
 
@@ -81,6 +83,14 @@ const Dashboard = () => {
     { name: 'Tecnologia', ads: 543, growth: '+12%' },
     { name: 'Beleza', ads: 456, growth: '+18%' }
   ]
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -99,7 +109,7 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
@@ -145,26 +155,34 @@ const Dashboard = () => {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-4">
-                  <div className={`w-3 h-3 rounded-full ${
-                    activity.status === 'success' ? 'bg-green-500' :
-                    activity.status === 'info' ? 'bg-blue-500' :
-                    'bg-yellow-500'
-                  }`}></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900 dark:text-white font-medium">
-                      {activity.action}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {activity.target}
-                    </p>
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center space-x-4">
+                    <div className={`w-3 h-3 rounded-full ${
+                      activity.status === 'success' ? 'bg-green-500' :
+                      activity.status === 'info' ? 'bg-blue-500' :
+                      'bg-yellow-500'
+                    }`}></div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900 dark:text-white font-medium">
+                        {activity.action}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {activity.target}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {activity.time}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {activity.time}
-                  </span>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhuma atividade recente</p>
+                  <p className="text-sm">Comece usando a plataforma para ver suas atividades aqui</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </motion.div>
@@ -208,6 +226,39 @@ const Dashboard = () => {
             <button className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-2 rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition-all">
               Fazer Upgrade
             </button>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Ações Rápidas
+            </h3>
+            <div className="space-y-3">
+              <button className="w-full text-left p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <Search className="h-5 w-5 text-blue-500" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    Buscar Anúncios
+                  </span>
+                </div>
+              </button>
+              <button className="w-full text-left p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <Image className="h-5 w-5 text-green-500" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    Gerar Imagem
+                  </span>
+                </div>
+              </button>
+              <button className="w-full text-left p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <FileText className="h-5 w-5 text-purple-500" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    Gerar Copy
+                  </span>
+                </div>
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>

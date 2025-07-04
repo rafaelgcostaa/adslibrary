@@ -142,7 +142,7 @@ export const AuthProvider = ({ children }) => {
       if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
         errorMessage = 'Erro de conexão com o servidor. Verifique se o Supabase está configurado corretamente.'
       } else if (error.message.includes('Invalid login credentials')) {
-        errorMessage = 'Email ou senha incorretos'
+        errorMessage = 'Email ou senha incorretos. Para contas demo, certifique-se de que os usuários foram criados no Supabase.'
       } else if (error.message.includes('Email not confirmed')) {
         errorMessage = 'Email não confirmado. Verifique sua caixa de entrada.'
       } else if (error.message.includes('Supabase não configurado')) {

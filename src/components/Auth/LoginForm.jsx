@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const LoginForm = ({ onToggleMode }) => {
@@ -51,6 +51,9 @@ const LoginForm = ({ onToggleMode }) => {
       setLoading(false)
     }
   }
+
+  const isSupabaseConfigured = import.meta.env.VITE_SUPABASE_URL && 
+    import.meta.env.VITE_SUPABASE_URL !== 'https://your-project.supabase.co'
 
   return (
     <motion.div
@@ -136,37 +139,53 @@ const LoginForm = ({ onToggleMode }) => {
           </p>
         </div>
 
-        {/* Demo Accounts */}
-        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Contas de Demonstração:
-          </p>
-          <div className="space-y-2">
-            <button
-              onClick={() => handleDemoLogin('admin@demo.com', 'demo123')}
-              disabled={loading}
-              className="w-full text-left p-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
-            >
-              <strong>Admin:</strong> admin@demo.com / demo123
-            </button>
-            <button
-              onClick={() => handleDemoLogin('user@demo.com', 'demo123')}
-              disabled={loading}
-              className="w-full text-left p-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
-            >
-              <strong>Usuário:</strong> user@demo.com / demo123
-            </button>
+        {/* Demo Accounts - Only show if Supabase is configured */}
+        {isSupabaseConfigured && (
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Contas de Demonstração:
+            </p>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleDemoLogin('admin@demo.com', 'demo123')}
+                disabled={loading}
+                className="w-full text-left p-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
+              >
+                <strong>Admin:</strong> admin@demo.com / demo123
+              </button>
+              <button
+                onClick={() => handleDemoLogin('user@demo.com', 'demo123')}
+                disabled={loading}
+                className="w-full text-left p-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
+              >
+                <strong>Usuário:</strong> user@demo.com / demo123
+              </button>
+            </div>
+            <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  <strong>Importante:</strong> As contas demo precisam ser criadas manualmente no Supabase Dashboard → Authentication → Users.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Configuration Notice */}
-        {(!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://your-project.supabase.co') && (
+        {!isSupabaseConfigured && (
           <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              ⚠️ Configure o Supabase para usar a autenticação real. 
-              <br />
-              <span className="text-xs">Clique em "Connect to Supabase" no topo da página.</span>
-            </p>
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  ⚠️ Configure o Supabase para usar a autenticação real.
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                  Clique em "Connect to Supabase" no topo da página.
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>

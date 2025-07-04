@@ -1,246 +1,105 @@
-# Facebook Ads Analyzer - SaaS Platform
+# Ad Analysis Platform
 
-Uma plataforma SaaS completa para análise inteligente de anúncios do Facebook com IA, geração de criativos e insights de mercado.
+A comprehensive platform for analyzing Facebook ads and generating creative content.
 
-## 🚀 Funcionalidades Principais
+## Setup Instructions
 
-### 📊 Análise de Anúncios
-- **Busca Avançada**: Acesso completo à Biblioteca de Anúncios do Facebook
-- **Filtros Inteligentes**: Todos os filtros disponíveis na API oficial
-- **IA de Análise**: Identificação automática de nichos escaláveis
-- **Score de Escalabilidade**: Algoritmo proprietário para avaliar potencial
+### 1. Supabase Configuration
 
-### 🎨 Geração de Criativos
-- **Imagens com IA**: Integração com PIAPI.AI para geração de imagens
-- **Copy Persuasiva**: Textos otimizados usando estrutura AIDA via OpenAI
-- **Múltiplas Variações**: Geração de headlines, descrições e CTAs
-- **Otimização para Conversão**: Elementos testados e aprovados
+1. Click "Connect to Supabase" in the top right corner of the application
+2. This will set up your Supabase project and configure the environment variables
 
-### 💳 Sistema de Pagamentos
-- **Múltiplos Planos**: Gratuito, Intermediário e Premium
-- **Sistema de Créditos**: Flexibilidade no uso das ferramentas
-- **Integração Stripe**: Pagamentos seguros e recorrentes
-- **Relatórios Detalhados**: Acompanhamento de uso e ROI
+### 2. Create Demo Users (Required for Demo Login)
 
-### 👥 Gestão de Equipes
-- **Colaboração**: Adicione membros à sua equipe
-- **Controle de Permissões**: Diferentes níveis de acesso
-- **Relatórios de Equipe**: Monitoramento de atividades
+After connecting to Supabase, you need to manually create the demo users:
 
-## 🛠️ Tecnologias Utilizadas
+1. Go to your Supabase Dashboard
+2. Navigate to **Authentication** → **Users**
+3. Click **Add user** and create these accounts:
 
-### Frontend
-- **React 18** - Framework principal
-- **React Router** - Navegação
-- **Tailwind CSS** - Estilização
-- **Framer Motion** - Animações
-- **Recharts** - Gráficos e visualizações
-- **React Hot Toast** - Notificações
+   **Admin Demo Account:**
+   - Email: `admin@demo.com`
+   - Password: `demo123`
+   - Confirm password: `demo123`
 
-### Backend & Banco de Dados
-- **Supabase** - Backend as a Service
-- **PostgreSQL** - Banco de dados
-- **Row Level Security** - Segurança avançada
-- **Edge Functions** - Funções serverless
+   **User Demo Account:**
+   - Email: `user@demo.com`
+   - Password: `demo123`
+   - Confirm password: `demo123`
 
-### Integrações
-- **Facebook Ads Library API** - Dados de anúncios
-- **PIAPI.AI** - Geração de imagens
-- **OpenAI GPT-4** - Geração de textos
-- **Stripe** - Processamento de pagamentos
+4. Make sure to **disable email confirmation** in Authentication settings if you want immediate access
 
-## 🏗️ Arquitetura
+### 3. Database Migration
 
-```
-src/
-├── components/          # Componentes reutilizáveis
-│   ├── Auth/           # Componentes de autenticação
-│   └── Layout/         # Layout e navegação
-├── contexts/           # Contextos React
-│   ├── AuthContext.jsx # Gerenciamento de autenticação
-│   └── ThemeContext.jsx # Sistema de temas
-├── lib/               # Configurações e utilitários
-│   └── supabase.js    # Cliente Supabase
-├── pages/             # Páginas da aplicação
-│   ├── AuthPage.jsx   # Login/Registro
-│   ├── Dashboard.jsx  # Dashboard principal
-│   ├── AdsSearch.jsx  # Busca de anúncios
-│   └── CreativeGenerator.jsx # Geração de criativos
-└── styles/            # Estilos globais
+The database schema will be automatically created when you connect to Supabase. The migration includes:
+
+- `profiles` table for user data
+- Credit management system
+- Row Level Security (RLS) policies
+- Automatic profile creation for new users
+
+### 4. Additional API Keys (Optional)
+
+For full functionality, configure these environment variables in your `.env` file:
+
+```env
+# Facebook Ads Library API
+VITE_FACEBOOK_APP_ID=your_facebook_app_id
+VITE_FACEBOOK_ACCESS_TOKEN=your_facebook_access_token
+
+# PIAPI.AI (Image Generation)
+VITE_PIAPI_API_KEY=your_piapi_api_key
+
+# OpenAI (Text Generation)
+VITE_OPENAI_API_KEY=your_openai_api_key
+
+# Stripe (Payments)
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
 
-## 🗄️ Estrutura do Banco de Dados
+## Features
 
-### Tabelas Principais
+- **User Authentication**: Secure login/signup with Supabase Auth
+- **Ad Search**: Search and analyze Facebook ads
+- **Creative Generator**: AI-powered ad creative generation
+- **Credit System**: Manage user credits for API usage
+- **Responsive Design**: Works on desktop and mobile
+- **Dark Mode**: Toggle between light and dark themes
 
-#### profiles
-- Dados do usuário e configurações de conta
-- Saldo de créditos e plano de assinatura
-- Integração com Supabase Auth
+## Demo Accounts
 
-#### ads_data
-- Dados coletados da API do Facebook
-- Metadados dos anúncios e criativos
-- Informações de performance
+Once you've created the demo users in Supabase, you can use:
 
-#### ai_analysis
-- Análises geradas pela IA
-- Scores de escalabilidade
-- Classificação de nichos
+- **Admin**: admin@demo.com / demo123
+- **User**: user@demo.com / demo123
 
-#### user_searches
-- Histórico de buscas do usuário
-- Parâmetros utilizados
-- Consumo de créditos
+## Troubleshooting
 
-#### generated_creatives
-- Criativos gerados (imagens e textos)
-- Prompts utilizados
-- Custos associados
+### "Invalid login credentials" Error
 
-## 🚀 Como Executar
+This error occurs when:
+1. Supabase is not properly configured
+2. Demo users haven't been created in the Supabase Dashboard
+3. The email/password combination doesn't exist
 
-### Pré-requisitos
-- Node.js 18+
-- Conta no Supabase
-- Chaves de API das integrações
+**Solution**: Follow the setup instructions above to create the demo users manually in your Supabase Dashboard.
 
-### Instalação
+### Connection Issues
 
-1. **Clone o repositório**
+If you see connection errors:
+1. Verify your Supabase URL and keys are correct
+2. Check that your Supabase project is active
+3. Ensure your internet connection is stable
+
+## Development
+
 ```bash
-git clone <repository-url>
-cd facebook-ads-analyzer
-```
-
-2. **Instale as dependências**
-```bash
+# Install dependencies
 npm install
-```
 
-3. **Configure as variáveis de ambiente**
-```bash
-cp .env.example .env
-# Edite o arquivo .env com suas chaves de API
-```
-
-4. **Configure o banco de dados Supabase**
-   - Crie um novo projeto no Supabase
-   - Execute as migrações SQL fornecidas
-   - Configure as políticas RLS
-
-5. **Execute o projeto**
-```bash
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
 ```
-
-## 🔧 Configuração das APIs
-
-### Facebook Ads Library
-1. Crie uma aplicação no Facebook Developers
-2. Obtenha o App ID e Access Token
-3. Configure as permissões necessárias
-
-### PIAPI.AI
-1. Registre-se no PIAPI.AI
-2. Obtenha sua chave de API
-3. Configure os limites de uso
-
-### OpenAI
-1. Crie uma conta na OpenAI
-2. Gere uma chave de API
-3. Configure os modelos desejados
-
-### Stripe
-1. Crie uma conta no Stripe
-2. Configure os produtos e preços
-3. Obtenha as chaves públicas e secretas
-
-## 📊 Funcionalidades de IA
-
-### Análise de Escalabilidade
-- **Volume de Anúncios**: Quantidade de anúncios ativos
-- **Diversidade de Anunciantes**: Número de diferentes anunciantes
-- **Consistência Temporal**: Estabilidade ao longo do tempo
-- **Taxa de Crescimento**: Crescimento do nicho
-
-### Geração de Criativos
-- **Prompts Otimizados**: Templates testados para cada tipo
-- **Variações Automáticas**: Múltiplas opções para teste
-- **Estrutura AIDA**: Metodologia comprovada de conversão
-
-## 🔒 Segurança
-
-### Autenticação
-- Supabase Auth com JWT
-- Row Level Security (RLS)
-- Políticas granulares de acesso
-
-### Pagamentos
-- Integração segura com Stripe
-- Webhooks para sincronização
-- Auditoria completa de transações
-
-### APIs
-- Rate limiting automático
-- Chaves criptografadas
-- Logs de auditoria
-
-## 📈 Planos e Preços
-
-### Gratuito
-- 3 dias de teste
-- R$ 10 em créditos
-- Funcionalidades básicas
-
-### Intermediário
-- R$ 29/mês
-- R$ 100 em créditos
-- Recursos expandidos
-
-### Premium
-- R$ 99/mês
-- R$ 500 em créditos
-- Acesso completo + equipe
-
-## 🎯 Roadmap
-
-### Versão 1.0 (Atual)
-- ✅ Sistema de autenticação
-- ✅ Busca de anúncios
-- ✅ Geração de criativos
-- ✅ Sistema de pagamentos
-
-### Versão 1.1
-- 📊 Relatórios avançados
-- 👥 Gestão de equipes
-- 📱 App mobile
-- 🔔 Notificações push
-
-### Versão 2.0
-- 🤖 IA mais avançada
-- 📈 Análise preditiva
-- 🔗 Integrações adicionais
-- 🌍 Suporte multi-idioma
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
-
-## 📞 Suporte
-
-- Email: suporte@facebookadsanalyzer.com
-- Discord: [Comunidade](https://discord.gg/example)
-- Documentação: [Docs](https://docs.facebookadsanalyzer.com)
-
----
-
-**Desenvolvido com ❤️ para marketeiros digitais que buscam resultados excepcionais**

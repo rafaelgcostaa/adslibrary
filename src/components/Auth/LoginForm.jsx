@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, AlertCircle, CreditCard, User, Crown, Zap } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const LoginForm = ({ onToggleMode }) => {
@@ -54,6 +54,49 @@ const LoginForm = ({ onToggleMode }) => {
 
   const isSupabaseConfigured = import.meta.env.VITE_SUPABASE_URL && 
     import.meta.env.VITE_SUPABASE_URL !== 'https://your-project.supabase.co'
+
+  const demoAccounts = [
+    {
+      email: 'admin@demo.com',
+      password: 'demo123',
+      name: 'Admin',
+      description: 'Acesso completo',
+      credits: 'R$ 100',
+      plan: 'Premium',
+      icon: Crown,
+      color: 'purple'
+    },
+    {
+      email: 'user@demo.com',
+      password: 'demo123',
+      name: 'Usuário',
+      description: 'Plano intermediário',
+      credits: 'R$ 50',
+      plan: 'Intermediário',
+      icon: User,
+      color: 'blue'
+    },
+    {
+      email: 'premium@demo.com',
+      password: 'demo123',
+      name: 'Premium',
+      description: 'Testes extensivos',
+      credits: 'R$ 500',
+      plan: 'Premium',
+      icon: Zap,
+      color: 'yellow'
+    },
+    {
+      email: 'free@demo.com',
+      password: 'demo123',
+      name: 'Gratuito',
+      description: 'Plano básico',
+      credits: 'R$ 10',
+      plan: 'Gratuito',
+      icon: CreditCard,
+      color: 'gray'
+    }
+  ]
 
   return (
     <motion.div
@@ -141,32 +184,66 @@ const LoginForm = ({ onToggleMode }) => {
 
         {/* Demo Accounts - Only show if Supabase is configured */}
         {isSupabaseConfigured && (
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Contas de Demonstração:
-            </p>
-            <div className="space-y-2">
-              <button
-                onClick={() => handleDemoLogin('admin@demo.com', 'demo123')}
-                disabled={loading}
-                className="w-full text-left p-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
-              >
-                <strong>Admin:</strong> admin@demo.com / demo123
-              </button>
-              <button
-                onClick={() => handleDemoLogin('user@demo.com', 'demo123')}
-                disabled={loading}
-                className="w-full text-left p-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
-              >
-                <strong>Usuário:</strong> user@demo.com / demo123
-              </button>
+          <div className="mt-6 p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div className="flex items-center justify-center mb-3">
+              <Zap className="h-5 w-5 text-blue-500 mr-2" />
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Contas de Demonstração
+              </p>
             </div>
-            <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+            
+            <div className="grid grid-cols-2 gap-2">
+              {demoAccounts.map((account, index) => {
+                const IconComponent = account.icon
+                return (
+                  <motion.button
+                    key={account.email}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    onClick={() => handleDemoLogin(account.email, account.password)}
+                    disabled={loading}
+                    className={`p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      account.color === 'purple' ? 'border-purple-200 bg-purple-50 hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-900/40' :
+                      account.color === 'blue' ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/40' :
+                      account.color === 'yellow' ? 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100 dark:border-yellow-700 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/40' :
+                      'border-gray-200 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <IconComponent className={`h-6 w-6 mb-2 ${
+                        account.color === 'purple' ? 'text-purple-600 dark:text-purple-400' :
+                        account.color === 'blue' ? 'text-blue-600 dark:text-blue-400' :
+                        account.color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-gray-600 dark:text-gray-400'
+                      }`} />
+                      <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                        {account.name}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {account.credits}
+                      </div>
+                      <div className={`text-xs font-medium mt-1 px-2 py-1 rounded-full ${
+                        account.color === 'purple' ? 'bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-300' :
+                        account.color === 'blue' ? 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-300' :
+                        account.color === 'yellow' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-300' :
+                        'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
+                      }`}>
+                        {account.plan}
+                      </div>
+                    </div>
+                  </motion.button>
+                )
+              })}
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-start space-x-2">
                 <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-blue-800 dark:text-blue-200">
-                  <strong>Importante:</strong> As contas demo precisam ser criadas manualmente no Supabase Dashboard → Authentication → Users.
-                </p>
+                <div className="text-xs text-blue-800 dark:text-blue-200">
+                  <p className="font-semibold mb-1">✨ Usuários criados automaticamente!</p>
+                  <p>Cada conta tem créditos pré-carregados para testar todas as funcionalidades da plataforma.</p>
+                </div>
               </div>
             </div>
           </div>
